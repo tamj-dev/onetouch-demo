@@ -385,30 +385,8 @@ const UnifiedHeader = {
             `;
         }
 
-        // DEMOモード切替メニュー
+        // DEMOモード切替メニュー（通報限定デモでは非表示）
         var demoSwitchMenu = '';
-        const isDemoMode = user && (user.isDemoMode || user.companyCode === 'TAMJ' || user.companyCode === 'JMAT' || user.companyCode === 'SYSTEM' || user.companyCode === 'PN001');
-        if (isDemoMode) {
-            const currentRole = user.role;
-            const roles = [
-                { key: 'staff', label: 'スタッフで表示', color: '#4CAF50', active: currentRole === 'staff' },
-                { key: 'contractor', label: '管理会社で表示', color: '#2196F3', active: currentRole === 'contractor' },
-                { key: 'office_admin', label: '事業所管理者で表示', color: '#FF9800', active: currentRole === 'office_admin' },
-                { key: 'company_admin', label: '本社管理者で表示', color: '#9C27B0', active: currentRole === 'company_admin' }
-            ];
-            const roleItems = roles.map(r => `
-                <a href="#" class="uh-menu-item${r.active ? ' uh-demo-active' : ''}" onclick="UnifiedHeader._demoSwitch('${r.key}'); return false;">
-                    <div class="uh-menu-icon"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${r.color};"></span></div>
-                    <span class="uh-menu-text">${r.label}</span>
-                    ${r.active ? '<span style="margin-left:auto;color:#2563eb;font-size:14px;">✓</span>' : ''}
-                </a>
-            `).join('');
-            demoSwitchMenu = `
-                <div class="uh-divider"></div>
-                <div style="padding:4px 16px 4px;font-size:10px;font-weight:700;color:#999;letter-spacing:1px;">DEMO切替</div>
-                ${roleItems}
-            `;
-        }
 
         dropdown.innerHTML = `
             <div class="uh-menu-item uh-user-detail">
