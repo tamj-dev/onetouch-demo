@@ -248,13 +248,18 @@
             // 初回のみマスタデータをlocalStorageに投入
             if (typeof initDemoData === 'function') { initDemoData(); }
 
-            // セッション保存
+            // セッション保存（前ユーザーのデモキャッシュをクリア）
+            sessionStorage.removeItem('demo.items');
+            sessionStorage.removeItem('demo.items.user');
             const userInfo = {
                 companyCode: user.companyCode, companyName: user.companyName,
                 id: user.id, userId: user.id, password: user.password,
                 name: user.name, userName: user.name, role: user.role,
                 scope: user.scope || '', officeCode: user.officeCode || '',
-                officeName: user.officeName || '', isFirstLogin: false, isDemoMode: true
+                officeName: user.officeName || '', isFirstLogin: false, isDemoMode: true,
+                partnerId: user.partnerId || '', partnerCode: user.partnerCode || '',
+                categories: user.categories || [],
+                assignedCompanies: user.assignedCompanies || []
             };
             sessionStorage.setItem('currentUser', JSON.stringify(userInfo));
             localStorage.setItem('currentAccount', JSON.stringify(userInfo));
@@ -267,7 +272,7 @@
                 saveDemoSnapshot();
             }
 
-            // 業者の場合はcontractor情報も保存
+            // 管理会社の場合はcontractor情報も保存
             if (user.role === 'contractor') {
                 var partnerCompanies = [];
                 if (typeof getPartnerCompanies === 'function') {
@@ -289,7 +294,7 @@
             } else if (user.role === 'company_admin') {
                 window.location.href = 'master-top.html';
             } else if (user.role === 'system_admin') {
-                window.location.href = 'system-admin-dashboard.html';
+                window.location.href = 'system-admin.html';
             } else {
                 window.location.href = 'report.html';
             }
@@ -308,23 +313,88 @@
 
         <div class="error-message" id="errorMessage"></div>
 
-        <div style="text-align:center; margin: 20px 0 30px;">
-            <div style="display:inline-block; background:#1e3a5f; color:#fff; padding:4px 16px; border-radius:20px; font-size:12px; font-weight:700; margin-bottom:20px; animation:demoFloat 3s ease-in-out infinite;">DEMO MODE</div>
-            <p style="font-size:14px; color:#666; margin-bottom:24px;">施設スタッフ向けの通報体験ができます</p>
-            <button type="button" onclick="demoLogin('staff')" style="display:flex; align-items:center; gap:14px; padding:18px 24px; border:2px solid #1e3a5f; border-radius:14px; background:#fff; cursor:pointer; text-align:left; font-family:inherit; transition:all 0.2s; width:100%; max-width:340px; margin:0 auto;">
-                <div style="width:48px; height:48px; background:#eef2ff; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1e3a5f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="userId">ログインID</label>
+                <input type="text" id="userId" name="userId" required autofocus placeholder="例：TAMJ-tanaka">
+            </div>
+
+            <div class="form-group">
+                <label for="password">パスワード</label>
+                <div class="password-wrapper">
+                    <input type="password" id="password" name="password" required placeholder="パスワードを入力">
+                    <button type="button" class="toggle-password" onclick="togglePassword()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-login">ログイン</button>
+        </form>
+
+        <div class="info">
+            アカウントマスタで登録されたログインIDと<br>パスワードを入力してください
+        </div>
+
+        <!-- DEMOワンタップボタン -->
+        <div style="display:flex; align-items:center; gap:12px; margin:8px 0 16px;">
+            <div style="flex:1; height:1px; background:#e0e0e0;"></div>
+            <span style="font-size:12px; color:#999;">または、デモですぐ体験</span>
+            <div style="flex:1; height:1px; background:#e0e0e0;"></div>
+        </div>
+
+        <div style="display:inline-block; background:#1e3a5f; color:#fff; padding:3px 14px; border-radius:20px; font-size:12px; font-weight:700; margin-bottom:14px; animation:demoFloat 3s ease-in-out infinite;">DEMO MODE</div>
+
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
+            <button type="button" onclick="demoLogin('staff')" style="display:flex; align-items:center; gap:12px; padding:14px 16px; border:2px solid #e8e8e8; border-radius:12px; background:#fff; cursor:pointer; text-align:left; font-family:inherit; transition:all 0.2s;">
+                <div style="width:40px; height:40px; background:#f1f5f9; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
                 <div>
-                    <div style="font-size:16px; font-weight:700; color:#1e3a5f;">デモスタッフでログイン</div>
-                    <div style="font-size:12px; color:#94a3b8; margin-top:2px;">トラブル通報を体験する</div>
+                    <div style="font-size:14px; font-weight:700; color:#1e293b;">スタッフで体験</div>
+                    <div style="font-size:11px; color:#999;">通報画面を試す</div>
                 </div>
-                <div style="margin-left:auto; color:#1e3a5f; font-size:22px; font-weight:bold;">›</div>
+                <div style="margin-left:auto; color:#ccc; font-size:18px;">›</div>
+            </button>
+
+            <button type="button" onclick="demoLogin('contractor')" style="display:flex; align-items:center; gap:12px; padding:14px 16px; border:2px solid #e8e8e8; border-radius:12px; background:#fff; cursor:pointer; text-align:left; font-family:inherit; transition:all 0.2s;">
+                <div style="width:40px; height:40px; background:#f1f5f9; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+                </div>
+                <div>
+                    <div style="font-size:14px; font-weight:700; color:#1e293b;">管理会社で体験</div>
+                    <div style="font-size:11px; color:#999;">対応・管理画面を試す</div>
+                </div>
+                <div style="margin-left:auto; color:#ccc; font-size:18px;">›</div>
+            </button>
+
+            <button type="button" onclick="demoLogin('office_admin')" style="display:flex; align-items:center; gap:12px; padding:14px 16px; border:2px solid #e8e8e8; border-radius:12px; background:#fff; cursor:pointer; text-align:left; font-family:inherit; transition:all 0.2s;">
+                <div style="width:40px; height:40px; background:#f1f5f9; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                </div>
+                <div>
+                    <div style="font-size:14px; font-weight:700; color:#1e293b;">事業所管理者で体験</div>
+                    <div style="font-size:11px; color:#999;">マスタ管理・設定画面を試す</div>
+                </div>
+                <div style="margin-left:auto; color:#ccc; font-size:18px;">›</div>
+            </button>
+
+            <button type="button" onclick="demoLogin('company_admin')" style="display:flex; align-items:center; gap:12px; padding:14px 16px; border:2px solid #e8e8e8; border-radius:12px; background:#fff; cursor:pointer; text-align:left; font-family:inherit; transition:all 0.2s;">
+                <div style="width:40px; height:40px; background:#f1f5f9; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/></svg>
+                </div>
+                <div>
+                    <div style="font-size:14px; font-weight:700; color:#1e293b;">本社管理者で体験</div>
+                    <div style="font-size:11px; color:#999;">法人全体の管理画面を試す</div>
+                </div>
+                <div style="margin-left:auto; color:#ccc; font-size:18px;">›</div>
             </button>
         </div>
     </div>
 
     <div class="footer">
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:12px;color:#999;font-size:12px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            <span>SSL/TLS暗号化通信で保護されています</span>
+        </div>
         <div class="footer-links">
             <a href="terms.html">利用規約</a>
             <span style="color: #ddd;">|</span>
@@ -401,11 +471,15 @@
                 const logEntry = {
                     timestamp: new Date().toISOString(),
                     type: type,
+                    user: detail.userName || detail.userId || '',
+                    userId: detail.userId || '',
+                    companyCode: detail.companyCode || '',
+                    officeCode: detail.officeCode || '',
                     detail: detail,
                     page: 'login.html'
                 };
                 logs.unshift(logEntry);
-                if (logs.length > 500) logs.length = 500; // 最大500件
+                if (logs.length > 500) logs.length = 500;
                 localStorage.setItem('audit.logs', JSON.stringify(logs));
             } catch (e) {
                 console.warn('監査ログの記録に失敗:', e);
@@ -419,10 +493,10 @@
             
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
-                toggleBtn.textContent = '非表示';
+                toggleBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
             } else {
                 passwordInput.type = 'password';
-                toggleBtn.textContent = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+                toggleBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
             }
         }
 
@@ -464,7 +538,7 @@
                 }
                 
                 logEvent('login', { userId: 'admin', role: 'system_admin' });
-                window.location.href = 'system-admin-dashboard.html';
+                window.location.href = 'system-admin.html';
                 return;
             }
             
@@ -508,14 +582,14 @@
                 accounts = [];
             }
             
-            // 業者データを取得（新規追加）
+            // 管理会社データを取得（新規追加）
             let partners = [];
             try {
                 partners = JSON.parse(localStorage.getItem('partners')) || [];
                 
-                // DEMOモード用：デフォルト業者データを常に追加（IDの重複は除外）
+                // DEMOモード用：デフォルト管理会社データを常に追加（IDの重複は除外）
                 const demoPartners = window.DEMO_PARTNERS || [];
-                // 既存データにDEMO業者が含まれていなければ先頭に追加（優先マッチ）
+                // 既存データにDEMO管理会社が含まれていなければ先頭に追加（優先マッチ）
                 const mergedPartners = [];
                 demoPartners.forEach(dp => {
                     mergedPartners.push(dp);
@@ -527,7 +601,7 @@
                 });
                 partners = mergedPartners;
                 
-                // 業者データを認証用フォーマットに変換（複数担当者対応）
+                // 管理会社データを認証用フォーマットに変換（複数担当者対応）
                 var partnerAccounts = [];
                 partners.forEach(function(p) {
                     var contacts = p.contacts || [];
@@ -566,7 +640,7 @@
                 partners = [];
             }
             
-            // 全アカウント（デモ + マスタ登録 + 業者）
+            // 全アカウント（デモ + マスタ登録 + 管理会社）
             const allAccounts = [...demoAccounts, ...accounts, ...partners];
             
             // ログインIDとパスワードで認証
@@ -584,7 +658,7 @@
                 });
             }
             
-            // 見つからなければfullId全体でマッチ（業者のloginIdなど）
+            // 見つからなければfullId全体でマッチ（管理会社のloginIdなど）
             if (!user) {
                 user = allAccounts.find(account => {
                     if (account.password !== password) return false;
@@ -649,12 +723,13 @@
                         userId: user.id, 
                         userName: user.name, 
                         companyCode: user.companyCode,
+                        officeCode: user.officeCode || '',
                         role: user.role 
                     });
                     
                     // 身分によって振り分け
                     if (user.role === 'contractor') {
-                        // 業者の場合は専用ダッシュボードへ
+                        // 管理会社の場合は専用ダッシュボードへ
                         // 契約テーブルから担当会社を取得（assignedCompaniesの代替）
                         var partnerAssignedCompanies = [];
                         if (typeof getPartnerCompanies === 'function') {
@@ -708,7 +783,7 @@
             const currentContractor = sessionStorage.getItem('currentContractor');
             
             if (currentContractor) {
-                // 業者としてログイン済み
+                // 管理会社としてログイン済み
                 const contractor = JSON.parse(currentContractor);
                 window.location.href = 'contractor-dashboard.html';
             } else if (currentUser) {
